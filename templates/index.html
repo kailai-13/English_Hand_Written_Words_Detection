@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Handwriting Recognition</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Draw a Character</h1>
+        <canvas id="canvas" width="280" height="280"></canvas>
+        <div class="controls">
+            <button onclick="clearCanvas()">Clear</button>
+            <button onclick="predict()">Predict</button>
+        </div>
+        <div id="result"></div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
