@@ -1,75 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Handwriting Recognition</title>
     <style>
-        /* General Styling */
         body {
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(to right, #4facfe, #00f2fe);
+            min-height: 100vh;
+            background-color: #f0f0f0;
             font-family: Arial, sans-serif;
-            color: white;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
             text-align: center;
         }
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
         }
 
-        /* Canvas Styling */
-        canvas {
-            border: 2px solid white;
-            background-color: black;
-            cursor: crosshair;
-            display: block;
-            touch-action: none; /* Prevent scrolling while drawing */
-        }
-
-        /* Buttons */
-        .controls button {
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-            margin: 5px;
-            font-size: 16px;
+        #canvas {
+            border: 2px solid #333;
             border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-        .controls button:first-child {
-            background: crimson;
-            color: white;
-        }
-        .controls button:last-child {
-            background: limegreen;
-            color: white;
-        }
-        .controls button:hover {
-            transform: scale(1.1);
-            opacity: 0.9;
+            margin: 10px 0;
+            background-color: white;
         }
 
-        /* Prediction Result */
-        #result {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 10px;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.5s ease-out;
+        .controls {
+            margin: 15px 0;
         }
-        #result.show {
-            opacity: 1;
-            transform: translateY(0);
+
+        button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 15px;
+            font-size: 20px;
+            color: #333;
         }
     </style>
 </head>
@@ -85,97 +72,64 @@
     </div>
 
     <script>
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
         let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
 
-        // Set up canvas
-        ctx.fillStyle = "black";
+        // Initialize canvas background
+        ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.lineWidth = 15;  // Thicker stroke for better recognition
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "white";
+        ctx.fillStyle = 'black';
 
-        // Mouse events
-        canvas.addEventListener("mousedown", startDrawing);
-        canvas.addEventListener("mousemove", draw);
-        canvas.addEventListener("mouseup", stopDrawing);
-        canvas.addEventListener("mouseleave", stopDrawing);
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
 
-        // Touch events (for mobile)
-        canvas.addEventListener("touchstart", startDrawing, { passive: true });
-        canvas.addEventListener("touchmove", draw, { passive: true });
-        canvas.addEventListener("touchend", stopDrawing);
-
-        function startDrawing(event) {
+        function startDrawing(e) {
             isDrawing = true;
-            ctx.beginPath();
-            ctx.moveTo(getX(event), getY(event));
+            [lastX, lastY] = [e.offsetX, e.offsetY];
         }
 
-        function draw(event) {
+        function draw(e) {
             if (!isDrawing) return;
-            ctx.lineTo(getX(event), getY(event));
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
             ctx.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
         }
 
         function stopDrawing() {
             isDrawing = false;
-            ctx.beginPath();  // Prevents unnecessary path continuation
-        }
-
-        function getX(event) {
-            return event.touches ? event.touches[0].clientX - canvas.getBoundingClientRect().left : event.clientX - canvas.getBoundingClientRect().left;
-        }
-
-        function getY(event) {
-            return event.touches ? event.touches[0].clientY - canvas.getBoundingClientRect().top : event.clientY - canvas.getBoundingClientRect().top;
         }
 
         function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            document.getElementById("result").classList.remove("show");
-            document.getElementById("result").textContent = "";
+            ctx.fillStyle = 'black';
+            document.getElementById('result').textContent = '';
         }
 
-        function preprocessCanvas() {
-            // Convert to grayscale 28x28 for ML model
-            let tempCanvas = document.createElement("canvas");
-            let tempCtx = tempCanvas.getContext("2d");
-            tempCanvas.width = 28;
-            tempCanvas.height = 28;
-
-            // Scale down to 28x28
-            tempCtx.drawImage(canvas, 0, 0, 28, 28);
-
-            // Get pixel data
-            let imageData = tempCtx.getImageData(0, 0, 28, 28);
-            let pixels = imageData.data;
-            let grayscaleArray = [];
-
-            for (let i = 0; i < pixels.length; i += 4) {
-                let grayscaleValue = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
-                grayscaleArray.push(255 - grayscaleValue); // Invert color for ML model
-            }
-
-            return grayscaleArray;
-        }
-
-        async function predict() {
-            document.getElementById("result").textContent = "Predicting...";
-            document.getElementById("result").classList.add("show");
-
-            let processedImage = preprocessCanvas();
-
-            // Simulated ML Model Prediction (Replace with actual ML call)
-            setTimeout(() => {
-                let randomCharacter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // Random A-Z character
-                document.getElementById("result").textContent = `Prediction: ${randomCharacter}`;
-            }, 1500);
-
-            // Uncomment below and replace with your ML model call:
-            // let modelPrediction = await myModel.predict(processedImage);
-            // document.getElementById("result").textContent = `Prediction: ${modelPrediction}`;
+        function predict() {
+            const imageData = canvas.toDataURL();
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({image: imageData}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').textContent = `Prediction: ${data.prediction}`;
+            });
         }
     </script>
 </body>
