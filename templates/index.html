@@ -31,8 +31,8 @@
             border: 2px solid white;
             background-color: black;
             cursor: crosshair;
-            margin-bottom: 10px;
             display: block;
+            touch-action: none; /* Prevent scrolling while drawing */
         }
 
         /* Buttons */
@@ -89,13 +89,20 @@
         const ctx = canvas.getContext("2d");
         let isDrawing = false;
 
-        // Event Listeners for Mouse
+        // Set up canvas
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 15;  // Thicker stroke for better recognition
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "white";
+
+        // Mouse events
         canvas.addEventListener("mousedown", startDrawing);
         canvas.addEventListener("mousemove", draw);
         canvas.addEventListener("mouseup", stopDrawing);
         canvas.addEventListener("mouseleave", stopDrawing);
 
-        // Event Listeners for Touch (Mobile)
+        // Touch events (for mobile)
         canvas.addEventListener("touchstart", startDrawing, { passive: true });
         canvas.addEventListener("touchmove", draw, { passive: true });
         canvas.addEventListener("touchend", stopDrawing);
@@ -108,16 +115,13 @@
 
         function draw(event) {
             if (!isDrawing) return;
-            ctx.lineWidth = 10;
-            ctx.lineCap = "round";
-            ctx.strokeStyle = "white";
             ctx.lineTo(getX(event), getY(event));
             ctx.stroke();
         }
 
         function stopDrawing() {
             isDrawing = false;
-            ctx.beginPath();
+            ctx.beginPath();  // Prevents unnecessary path continuation
         }
 
         function getX(event) {
@@ -129,19 +133,49 @@
         }
 
         function clearCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             document.getElementById("result").classList.remove("show");
             document.getElementById("result").textContent = "";
         }
 
-        function predict() {
+        function preprocessCanvas() {
+            // Convert to grayscale 28x28 for ML model
+            let tempCanvas = document.createElement("canvas");
+            let tempCtx = tempCanvas.getContext("2d");
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+
+            // Scale down to 28x28
+            tempCtx.drawImage(canvas, 0, 0, 28, 28);
+
+            // Get pixel data
+            let imageData = tempCtx.getImageData(0, 0, 28, 28);
+            let pixels = imageData.data;
+            let grayscaleArray = [];
+
+            for (let i = 0; i < pixels.length; i += 4) {
+                let grayscaleValue = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+                grayscaleArray.push(255 - grayscaleValue); // Invert color for ML model
+            }
+
+            return grayscaleArray;
+        }
+
+        async function predict() {
             document.getElementById("result").textContent = "Predicting...";
             document.getElementById("result").classList.add("show");
 
+            let processedImage = preprocessCanvas();
+
+            // Simulated ML Model Prediction (Replace with actual ML call)
             setTimeout(() => {
                 let randomCharacter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // Random A-Z character
                 document.getElementById("result").textContent = `Prediction: ${randomCharacter}`;
             }, 1500);
+
+            // Uncomment below and replace with your ML model call:
+            // let modelPrediction = await myModel.predict(processedImage);
+            // document.getElementById("result").textContent = `Prediction: ${modelPrediction}`;
         }
     </script>
 </body>
